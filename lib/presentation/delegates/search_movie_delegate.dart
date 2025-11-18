@@ -24,11 +24,33 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     isLoadingStream.add(true);
 
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
     _debounceTimer = Timer(const Duration(microseconds: 1000), () async {
       final movies = await searchMovies(query);
       initialMovies = movies;
       debouncedMovies.add(movies);
       isLoadingStream.add(false);
     });
+
+    Widget buildResultsAndSuggestions() {
+      return StreamBuilder(
+        initialData: initialMovies,
+        stream: debouncedMovies.stream,
+        builder: (context, snapshot) {
+          final movies = snapshot.data ?? [];
+
+          return ListView.builder(
+            itemCount: movies.length,
+            itemBuilder: (context, index) => _MovieItem(
+              movie: movies[index],
+              onMovieSelected: (context, movie) {
+                clearStream();
+                close(context, movie);
+              },
+            ),
+          );
+        },
+      );
+    }
   }
 }
